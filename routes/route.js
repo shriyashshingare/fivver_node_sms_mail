@@ -3,8 +3,7 @@ var api = express.Router();
 var mailcontroller = require('../controllers/MailController')
 
 //mail api's
- api.use('/api/sendmail', mailcontroller.sendmail);//{"pkgName":"com.epicgames.fortnite"}
-
-
+ api.use('/api/sendmail', mailcontroller.sendMail);
+ api.use('/api/receivemail', mailcontroller.receiveMail);
 
 module.exports = api ;

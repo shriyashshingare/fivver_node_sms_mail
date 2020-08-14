@@ -148,12 +148,14 @@ class Mail {
 }*/
 
 class Mail {
+
     constructor() { 
 
     }
 
-    receiveMail = async () => {
+     async receiveMail(){
         try {
+            var mailReceivedList = [];
             var imap = new Imap({
                 user: 'shriyashshingare@yahoo.com',
                 password: 'ricbssvuwttkubxt',
@@ -174,24 +176,33 @@ class Mail {
                         var f = imap.fetch(results, { bodies: '' });
                         f.on('message', function (msg, seqno) {
                             //console.log('Message # % d', seqno);
-                            var prefix = '(#' + seqno + ') ';
+                            //var prefix = '(#' + seqno + ') ';
                             msg.on('body', function (stream, info) {
                                 simpleParser(stream, (err, mail) => {
-                                    console.log(mail.subject)
+                                    let emailData = {
+                                        "Sender":mail.from['text'],
+                                        "Subject":mail.subject,
+                                        "Account":mail.to['text'],
+                                        "Timestamp":mail.date
+                                    }
+                                     mailReceivedList.push(emailData); 
                                 });
+
                             });
-                            msg.once('attributes', function (attrs) {
-                                //console.log(prefix + 'Attributes: % s', inspect(attrs, false, 8));
-                            });
-                            msg.once('end', function () {
-                                //console.log(prefix + 'Finished');
-                            });
+                            // msg.once('attributes', function (attrs) {
+                            //     //console.log(prefix + 'Attributes: % s', inspect(attrs, false, 8));
+                            // });
+                            // msg.once('end', function () {
+                            //     //console.log(prefix + 'Finished');
+                            // });
                         });
                         f.once('error', function (err) {
                             console.log('Fetch error: ' + err);
                         });
                         f.once('end', function () {
+                            console.log(mailReceivedList,1,"EMAIL DATA")
                             console.log('Done fetching all messages!');
+                            return Promise.all(mailReceivedList);
                             imap.end();
                         });
                     });
@@ -205,12 +216,12 @@ class Mail {
                 console.log('Connection ended');
             });
             imap.connect();
-            return true;
         } catch (error) {
             return error
         }
 
     }
+
 
     sendMail = async () => {
         // Generate test SMTP service account from ethereal.email

@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "sms and mail api's",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shriyashshingare/fivver_node_sms_mail.git"
+  },
+  "author": "Shriyash Shingare (shriyashshingare@gmail.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shriyashshingare/fivver_node_sms_mail/issues"
+  },
+  "homepage": "https://github.com/shriyashshingare/fivver_node_sms_mail#readme"
+}

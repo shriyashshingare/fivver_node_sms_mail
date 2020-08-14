@@ -1,4 +1,5 @@
 var nodemailer = require('nodemailer');
+const { resolve } = require('path');
 var Imap = require('imap'),
     inspect = require('util').inspect;
 const simpleParser = require('mailparser').simpleParser;
@@ -150,7 +151,6 @@ class Mail {
 class Mail {
 
     constructor() { 
-
     }
 
      async receiveMail(){
@@ -167,8 +167,8 @@ class Mail {
             function openInbox(cb) {
                 imap.openBox('INBOX', true, cb);
             }
-            imap.once('ready', function () {
-                
+
+            imap.once('ready', function () {    
                 openInbox(function (err, box) {
                     if (err) throw err;
                     imap.search([['SINCE', 'June 15, 2018']], function (err, results) {
@@ -185,24 +185,24 @@ class Mail {
                                         "Account":mail.to['text'],
                                         "Timestamp":mail.date
                                     }
-                                     mailReceivedList.push(emailData); 
+                                    mailReceivedList.push(emailData);
                                 });
-
                             });
-                            // msg.once('attributes', function (attrs) {
-                            //     //console.log(prefix + 'Attributes: % s', inspect(attrs, false, 8));
-                            // });
-                            // msg.once('end', function () {
-                            //     //console.log(prefix + 'Finished');
-                            // });
+                            msg.once('attributes', function (attrs) {
+                                //console.log(prefix + 'Attributes: % s', inspect(attrs, false, 8));
+                            });
+                            msg.once('end', function () {
+                                console.log(mailReceivedList);
+                                //console.log(prefix + 'Finished');
+                            });
                         });
                         f.once('error', function (err) {
                             console.log('Fetch error: ' + err);
                         });
                         f.once('end', function () {
-                            console.log(mailReceivedList,1,"EMAIL DATA")
+                            //console.log(mailReceivedList,1,"EMAIL DATA")
                             console.log('Done fetching all messages!');
-                            return Promise.all(mailReceivedList);
+                            //return Promise.all(mailReceivedList);
                             imap.end();
                         });
                     });
@@ -212,10 +212,14 @@ class Mail {
             imap.once('error', function (err) {
                 console.log('outside', err);
             });
-            imap.once('end', function () {
-                console.log('Connection ended');
-            });
-            imap.connect();
+            return new Promise((resolve,reject) => {
+                imap.connect();
+                imap.once('end', async function () {
+                    resolve(mailReceivedList)
+                    console.log('Connection ended');
+                    return mailReceivedList;
+                });
+            })
         } catch (error) {
             return error
         }

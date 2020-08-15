@@ -25,6 +25,7 @@
     "imap": "^0.8.19",
     "mailparser": "^2.8.1",
     "nodemailer": "^6.4.11",
-    "puppeteer": "^5.2.1"
+    "puppeteer": "^5.2.1",
+    "sms-activate": "^1.0.1"
   }
 }

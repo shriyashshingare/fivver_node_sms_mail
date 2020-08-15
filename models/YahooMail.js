@@ -1,8 +1,10 @@
 const puppeteer = require('puppeteer');
 const { response } = require('express');
-var faker = require('faker/locale/de');
+var faker = require('faker');
 const SMSActivate = require('sms-activate')
 const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
+var randomUseragent = require('random-useragent');
+
 
 module.exports = class YahooMail {
     constructor() {
@@ -19,6 +21,12 @@ module.exports = class YahooMail {
             deviceScaleFactor: 1,
         });
         await page.goto(url, { waitUntil: 'networkidle2' });
+
+        var userAgent = await randomUseragent.getRandom()
+        console.log(userAgent, 'rua')
+        await page.setUserAgent(userAgent)
+        console.log(await browser.userAgent());
+
         let phoneData = await this.getNumber();
         let phoneNumber = undefined;
         let date = await this.getDate('1-1-1960', '1-1-2000')
@@ -32,6 +40,7 @@ module.exports = class YahooMail {
             'lastName': faker.name.lastName(),
             'yid': await this.getMailID(),
             'password': faker.internet.password(),
+            'shortCountryCode':'RU',
             'phone': phoneNumber,
             'mm': date.getMonth(),
             'dd': date.getDate(),
@@ -45,13 +54,14 @@ module.exports = class YahooMail {
             'lastName',
             'yid',
             'password',
+            'shortCountryCode',
             'phone',
             'mm',
             'dd',
             'yyyy'
         ]
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < selectors.length; i++) {
             let myValue = userData[selectors[i]];
             let inputSelector = "[name='" + selectors[i] + "']";
             console.log(inputSelector)
@@ -72,11 +82,16 @@ module.exports = class YahooMail {
 
         async function checkRightMail() {
             return await page.evaluate(() => {
-                if (document.querySelector('#reg-error-yid').childElementCount > 0) {
-                    return 1;
-                } else {
+                if(document.querySelector('#reg-error-yid')){
+                    if (document.querySelector('#reg-error-yid').childElementCount > 0) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }else{
                     return 0;
                 }
+                
             })
         }
 
@@ -84,7 +99,7 @@ module.exports = class YahooMail {
         while (eFlag) {
             let myValue = await this.getMailID()
             await page.evaluate((myValue) => {
-                document.querySelector(['name="yid"']).value = myValue;
+                document.querySelector('[name="yid"]').value = myValue;
             }, myValue)
 
             await page.click('#reg-submit-button')
@@ -134,7 +149,9 @@ module.exports = class YahooMail {
 
         //sms.getBalance().then(async (balance) => { //https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getBalance
         if (balance > 0) {
-            const { id, number } = await sms.getNumber('mb', 1) // yandex https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getNumber&service=$service&forward=$forward&operator=$operator&ref=$ref&country=$country
+            var { id, number } = await sms.getNumber('mb', 0) // yandex https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getNumber&service=$service&forward=$forward&operator=$operator&ref=$ref&country=$country
+            number = number.toString()
+            number = number.slice(1)
             var data = { balance: balance, number: number, orderId: id }
             console.log(data)
             return new Promise((resolve, reject) => {
@@ -147,7 +164,6 @@ module.exports = class YahooMail {
                 resolve(balance)
                 return {balance:balance};
             })
-            console.log('Balance is zero', balance)
         }
         //   }).catch(console.error)
     }

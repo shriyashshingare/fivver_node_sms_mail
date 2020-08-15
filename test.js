@@ -1,7 +1,7 @@
 //const mailjs = require('./models/mail');
 const YahooMail = require('./models/YahooMail')
-const SMSActivate = require('sms-activate')
-const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
+// const SMSActivate = require('sms-activate')
+// const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
 /*
 async function mydata() {
     var mail = await new mailjs().receiveMail();
@@ -33,25 +33,19 @@ async function mydata() {
 //         console.log('You don\'t have enough money')
 //     }
 // }
-sms.getBalance().then(async (balance) => {
-    if (balance > 0) {
-      const { id, number } = await sms.getNumber('ya', 1) // yandex
-      console.log(`Number: ${number}, Order Id: ${id}`)
+
+
+// smsTesting();
+mydata();
+
+// await sms.setStatus(id, 1)
   
-      await sms.setStatus(id, 1)
-  
-      // you can add timeout to here
-      const waitForCode = setInterval(async () => {
-        const code = await sms.getCode(id)
-        if (code) {
-          clearInterval(waitForCode)
-          console.log(`code received: ${code}`)
-          await sms.setStatus(id, 6)
-        }
-      }, 1000)
-    } else {
-      console.log('Balance is zero', balance)
-    }
-  }).catch(console.error)
-smsTesting();
-//mydata();
+// // you can add timeout to here
+// const waitForCode = setInterval(async () => {
+//   const code = await sms.getCode(id)  //https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=setStatus&status=$status&id=$id&forward=$forward
+//   if (code) {
+//     clearInterval(waitForCode)
+//     console.log(`code received: ${code}`)
+//     await sms.setStatus(id, 6)
+//   }
+// }, 1000)

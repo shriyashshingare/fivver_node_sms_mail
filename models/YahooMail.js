@@ -9,20 +9,29 @@ var randomUseragent = require('random-useragent');
 
 
 module.exports = class YahooMail {
-    constructor(browser,page) {
-        this.browser = browser
-        this.page = page
+
+    constructor() {
+        this.browser = undefined
+        this.page = undefined
     }
 
     async register() {
-
+        this.browser = await puppeteer.launch({ headless: true });
+        this.page = await this.browser.newPage();
+        await this.page.setViewport({
+            width: 1080,
+            height: 720,
+            deviceScaleFactor: 1,
+        });
+        let ss = 0;
+        let filename = undefined;
         let url = "https://login.yahoo.com/account/create";
         await this.page.goto(url, { waitUntil: 'networkidle2' });
-
-        //var userAgent = await randomUseragent.getRandom()
-        //console.log(userAgent, 'rua')
-        //await this.page.setUserAgent(userAgent)
-        //console.log(await this.browser.userAgent());
+        const userAgentData = randomUseragent.getRandom((ua) => {
+            return parseFloat(ua.browserVersion) >= 80;
+        })
+        await this.page.setUserAgent(userAgentData);
+        console.log(userAgentData)
 
         let phoneData = await this.getNumber();
         let phoneNumber = undefined;
@@ -40,13 +49,13 @@ module.exports = class YahooMail {
             'shortCountryCode': 'RU',
             'phone': phoneNumber,
             'mm': date.getMonth(),
-            'dd': date.getDate(),
+            'dd': Math.floor(Math.random() * 28) + 1,
             'yyyy': date.getFullYear(),
         }
 
         console.log(userData)
         //fill signup form
-        
+
         let selectors = [
             'firstName',
             'lastName',
@@ -59,42 +68,52 @@ module.exports = class YahooMail {
             'yyyy'
         ]
 
-        await this.fillForm(userData,selectors)
-
-        await this.page.screenshot({ path: 'example.png' });
+        await this.fillForm(userData, selectors)
+        ss++;
+        filename = 'example' + ss + '.png';
+        await this.page.screenshot({ path: filename });
         await this.page.click('#reg-submit-button')
         await this.page.waitFor(4000)
-        await this.page.screenshot({ path: 'example2.png' });
+        ss++;
+        filename = 'example' + ss + '.png';
+        await this.page.screenshot({ path: filename });
 
 
 
 
         let eFlag = await this.checkValidation()
-        for(let i=0;i<eFlag.length;i++){
-            let selectorVal = selectors;
-            let userDataVal = userData;
-            if(eFlag[i]==0){
-                selectorVal.splice(i,1);
-                userDataVal.splice(i,1);
-                i--;
-            }
-        }
+        // for (let i = 0; i < eFlag.length; i++) {
+        //     let selectorVal = selectors;
+        //     let userDataVal = userData;
+        //     if (eFlag[i] == 0) {
+        //         selectorVal.splice(i, 1);
+        //         userDataVal.splice(i, 1);
+        //         i--;
+        //     }
+        // }
         while (eFlag) {
             let myValue = await this.getMailID()
-            await this.page.evaluate((myValue) => {
+            let myPass = userData.password
+            await this.page.evaluate((myValue, myPass) => {
                 document.querySelector('[name="yid"]').value = myValue;
-            }, myValue)
+                document.querySelector('[name="password"]').value = myPass;
+            }, myValue, myPass)
 
             await this.page.click('#reg-submit-button')
             await this.page.waitFor(4000)
-            await this.page.screenshot({ path: 'example3.png' });
-            eFlag = await this.checkRightMail()
+            ss++;
+            filename = 'example' + ss + '.png';
+            await this.page.screenshot({ path: filename });
+            eFlag = await this.checkValidation()
         }
-        if(eFlag==0){
-            this.solveCaptcha()
+        if (!eFlag) {
+            await this.page.waitFor(await this.stopTime())
+            await this.solveCaptcha()
         }
         await this.page.waitFor(await this.stopTime())
-        await this.page.screenshot({ path: 'example4.png' });
+        ss++;
+        filename = 'example' + ss + '.png';
+        await this.page.screenshot({ path: filename });
         /* let responseURL = 'https://login.yahoo.com/account/module/create?validateField=phone'
         const myResponse = await this.page.waitForResponse(responseURL);
         await this.browser.waitFor(2000);*/
@@ -107,9 +126,10 @@ module.exports = class YahooMail {
     }
 
     async getMailID() {
-        let emailID = faker.internet.email()
+        let emailID = faker.name.firstName() + faker.internet.email()
         var remove_after = emailID.indexOf('@');
         emailID = emailID.substring(0, remove_after);
+        emailID.trim()
         return emailID
     }
 
@@ -163,53 +183,66 @@ module.exports = class YahooMail {
                 visualFeedback: true // colorize reCAPTCHAs (violet = detected, green = solved)
             })
         )
-
-        // puppeteer usage as normal
-        //puppeteer.launch({ headless: true }).then(async this.browser => {
-        //    const this.page = await this.browser.newthis.page()
-            //await this.page.goto('https://www.google.com/recaptcha/api2/demo')
-
-            // That's it, a single line of code to solve reCAPTCHAs 🎉
-            await this.page.solveRecaptchas()
-
-            await Promise.all([
-                this.page.waitForNavigation(),
-                this.page.click(`#recaptcha-demo-submit`)
-            ])
-            await this.page.screenshot({ path: 'response.png', fullPage: true })
-            //await this.browser.close()
+        
+        console.log(this.page.url());
+        await this.page.solveRecaptchas()
+        setTimeout(()=>{
+        }, 10000)
+        await Promise.all([
+            this.page.waitForNavigation(),
+            this.page.click(`#recaptcha-submit`)
+        ])
+        await this.page.screenshot({ path: 'response.png', fullPage: true })
+        //await this.browser.close()
         //})
     }
 
+    // async checkValidation() {
+    //     return await this.page.evaluate(() => {
+    //         let checkSelectors = [
+    //         'firstName',
+    //         'lastName',
+    //         'yid',
+    //         'password',
+    //         'shortCountryCode',
+    //         'phone',
+    //         'mm',
+    //         'dd',
+    //         'yyyy'
+    //         ]
+    //         var formCheck = []
+    //         for(let i=0;i<checkSelectors.length;i++)
+    //         {
+    //             let check = '#reg-error-'+checkSelectors[i];
+    //             if (document.querySelector(check)) {
+    //                 if (document.querySelector(check).childElementCount > 0) {
+    //                     formCheck.push(1);
+    //                 } else {
+    //                     formCheck.push(0);                    }
+    //             } else {
+    //                 formCheck.push(1);                }
+    //         }
+    //     })
+    // }
+
     async checkValidation() {
         return await this.page.evaluate(() => {
-            let checkSelectors = [
-            'firstName',
-            'lastName',
-            'yid',
-            'password',
-            'shortCountryCode',
-            'phone',
-            'mm',
-            'dd',
-            'yyyy'
-            ]
-            var formCheck = []
-            for(let i=0;i<checkSelectors.length;i++)
-            {
-                let check = '#reg-error-'+checkSelectors[i];
-                if (document.querySelector(check)) {
-                    if (document.querySelector(check).childElementCount > 0) {
-                        formCheck.push(1);
-                    } else {
-                        formCheck.push(0);                    }
+            let check = '#reg-error-yid';
+            if (document.querySelector(check)) {
+                if (document.querySelector(check).childElementCount > 0) {
+                    return 1;
                 } else {
-                    formCheck.push(1);                }
+                    return 0;
+                }
+            } else {
+                return 0;
             }
+
         })
+
     }
 
-    async fillForm(userData,selectors){
+    async fillForm(userData, selectors) {
         for (let i = 0; i < selectors.length; i++) {
             let myValue = userData[selectors[i]];
             let inputSelector = "[name='" + selectors[i] + "']";

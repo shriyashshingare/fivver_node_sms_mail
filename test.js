@@ -10,15 +10,8 @@ async function mydata() {
 }
 */
 async function mydata() {
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setViewport({
-        width: 1080,
-        height: 720,
-        deviceScaleFactor: 1,
-    });
-    var yahooMail = await new YahooMail(browser,page);
-    yahooMail.register();
+  var yahooMail = await new YahooMail();
+  yahooMail.register();
 }
 
 
@@ -46,7 +39,7 @@ sms.getBalance().then(async (balance) => {
 }
 
 
-smsTesting();
+//smsTesting();
 //mydata();
 
 // await sms.setStatus(id, 1)
@@ -76,9 +69,9 @@ async function solveCaptcha() {
     // puppeteer usage as normal
     puppeteer.launch({ headless: true }).then(async browser => {
         const page = await browser.newPage()
-        //await page.goto('https://www.google.com/recaptcha/api2/demo')
+        await page.goto('https://www.google.com/recaptcha/api2/demo')
 
-        // That's it, a single line of code to solve reCAPTCHAs 🎉
+        //That's it, a single line of code to solve reCAPTCHAs 🎉
         await page.solveRecaptchas()
 
         await Promise.all([
@@ -89,4 +82,4 @@ async function solveCaptcha() {
         //await browser.close()
     })
 }
-//solveCaptcha();
+solveCaptcha();

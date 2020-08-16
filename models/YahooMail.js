@@ -1,5 +1,7 @@
-const puppeteer = require('puppeteer');
+// const puppeteer = require('puppeteer');
 const { response } = require('express');
+const puppeteer = require('puppeteer-extra')
+const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
 var faker = require('faker');
 const SMSActivate = require('sms-activate')
 const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
@@ -7,25 +9,20 @@ var randomUseragent = require('random-useragent');
 
 
 module.exports = class YahooMail {
-    constructor() {
+    constructor(browser,page) {
+        this.browser = browser
+        this.page = page
     }
 
     async register() {
 
         let url = "https://login.yahoo.com/account/create";
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.setViewport({
-            width: 1080,
-            height: 720,
-            deviceScaleFactor: 1,
-        });
-        await page.goto(url, { waitUntil: 'networkidle2' });
+        await this.page.goto(url, { waitUntil: 'networkidle2' });
 
-        var userAgent = await randomUseragent.getRandom()
-        console.log(userAgent, 'rua')
-        await page.setUserAgent(userAgent)
-        console.log(await browser.userAgent());
+        //var userAgent = await randomUseragent.getRandom()
+        //console.log(userAgent, 'rua')
+        //await this.page.setUserAgent(userAgent)
+        //console.log(await this.browser.userAgent());
 
         let phoneData = await this.getNumber();
         let phoneNumber = undefined;
@@ -40,7 +37,7 @@ module.exports = class YahooMail {
             'lastName': faker.name.lastName(),
             'yid': await this.getMailID(),
             'password': faker.internet.password(),
-            'shortCountryCode':'RU',
+            'shortCountryCode': 'RU',
             'phone': phoneNumber,
             'mm': date.getMonth(),
             'dd': date.getDate(),
@@ -49,6 +46,7 @@ module.exports = class YahooMail {
 
         console.log(userData)
         //fill signup form
+        
         let selectors = [
             'firstName',
             'lastName',
@@ -61,60 +59,47 @@ module.exports = class YahooMail {
             'yyyy'
         ]
 
-        for (let i = 0; i < selectors.length; i++) {
-            let myValue = userData[selectors[i]];
-            let inputSelector = "[name='" + selectors[i] + "']";
-            console.log(inputSelector)
+        await this.fillForm(userData,selectors)
 
-            await page.evaluate((myValue, inputSelector) => {
-                document.querySelector(inputSelector).value = myValue;
-            }, myValue, inputSelector)
+        await this.page.screenshot({ path: 'example.png' });
+        await this.page.click('#reg-submit-button')
+        await this.page.waitFor(4000)
+        await this.page.screenshot({ path: 'example2.png' });
 
-            await page.waitFor(await this.stopTime())
+
+
+
+        let eFlag = await this.checkValidation()
+        for(let i=0;i<eFlag.length;i++){
+            let selectorVal = selectors;
+            let userDataVal = userData;
+            if(eFlag[i]==0){
+                selectorVal.splice(i,1);
+                userDataVal.splice(i,1);
+                i--;
+            }
         }
-
-        await page.screenshot({ path: 'example.png' });
-        await page.click('#reg-submit-button')
-        await page.waitFor(4000)
-        await page.screenshot({ path: 'example2.png' });
-
-        let eFlag = 0;
-
-        async function checkRightMail() {
-            return await page.evaluate(() => {
-                if(document.querySelector('#reg-error-yid')){
-                    if (document.querySelector('#reg-error-yid').childElementCount > 0) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-                }else{
-                    return 0;
-                }
-                
-            })
-        }
-
-        eFlag = await checkRightMail()
         while (eFlag) {
             let myValue = await this.getMailID()
-            await page.evaluate((myValue) => {
+            await this.page.evaluate((myValue) => {
                 document.querySelector('[name="yid"]').value = myValue;
             }, myValue)
 
-            await page.click('#reg-submit-button')
-            await page.waitFor(4000)
-            await page.screenshot({ path: 'example3.png' });
-            eFlag = await checkRightMail()
+            await this.page.click('#reg-submit-button')
+            await this.page.waitFor(4000)
+            await this.page.screenshot({ path: 'example3.png' });
+            eFlag = await this.checkRightMail()
         }
-
-        await page.waitFor(await this.stopTime())
-        await page.screenshot({ path: 'example4.png' });
+        if(eFlag==0){
+            this.solveCaptcha()
+        }
+        await this.page.waitFor(await this.stopTime())
+        await this.page.screenshot({ path: 'example4.png' });
         /* let responseURL = 'https://login.yahoo.com/account/module/create?validateField=phone'
-        const myResponse = await page.waitForResponse(responseURL);
-        await browser.waitFor(2000);*/
+        const myResponse = await this.page.waitForResponse(responseURL);
+        await this.browser.waitFor(2000);*/
         //console.log(myResponse)
-        await browser.close();
+        await this.browser.close();
     }
 
     async stopTime() {
@@ -162,11 +147,79 @@ module.exports = class YahooMail {
         } else {
             return new Promise((resolve, reject) => {
                 resolve(balance)
-                return {balance:balance};
+                return { balance: balance };
             })
         }
         //   }).catch(console.error)
     }
 
+    async solveCaptcha() {
+        puppeteer.use(
+            RecaptchaPlugin({
+                provider: {
+                    id: '2captcha',
+                    token: '8d1ffc723363da12c6847c2f770bd2bc' // REPLACE THIS WITH YOUR OWN 2CAPTCHA API KEY ⚡
+                },
+                visualFeedback: true // colorize reCAPTCHAs (violet = detected, green = solved)
+            })
+        )
 
+        // puppeteer usage as normal
+        //puppeteer.launch({ headless: true }).then(async this.browser => {
+        //    const this.page = await this.browser.newthis.page()
+            //await this.page.goto('https://www.google.com/recaptcha/api2/demo')
+
+            // That's it, a single line of code to solve reCAPTCHAs 🎉
+            await this.page.solveRecaptchas()
+
+            await Promise.all([
+                this.page.waitForNavigation(),
+                this.page.click(`#recaptcha-demo-submit`)
+            ])
+            await this.page.screenshot({ path: 'response.png', fullPage: true })
+            //await this.browser.close()
+        //})
+    }
+
+    async checkValidation() {
+        return await this.page.evaluate(() => {
+            let checkSelectors = [
+            'firstName',
+            'lastName',
+            'yid',
+            'password',
+            'shortCountryCode',
+            'phone',
+            'mm',
+            'dd',
+            'yyyy'
+            ]
+            var formCheck = []
+            for(let i=0;i<checkSelectors.length;i++)
+            {
+                let check = '#reg-error-'+checkSelectors[i];
+                if (document.querySelector(check)) {
+                    if (document.querySelector(check).childElementCount > 0) {
+                        formCheck.push(1);
+                    } else {
+                        formCheck.push(0);                    }
+                } else {
+                    formCheck.push(1);                }
+            }
+        })
+    }
+
+    async fillForm(userData,selectors){
+        for (let i = 0; i < selectors.length; i++) {
+            let myValue = userData[selectors[i]];
+            let inputSelector = "[name='" + selectors[i] + "']";
+            console.log(inputSelector)
+
+            await this.page.evaluate((myValue, inputSelector) => {
+                document.querySelector(inputSelector).value = myValue;
+            }, myValue, inputSelector)
+
+            await this.page.waitFor(await this.stopTime())
+        }
+    }
 }

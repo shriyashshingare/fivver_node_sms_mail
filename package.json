@@ -31,6 +31,7 @@
     "puppeteer-extra": "^3.1.13",
     "puppeteer-extra-plugin-recaptcha": "^3.1.15",
     "random-useragent": "^0.4.0",
+    "request": "^2.88.2",
     "request-promise-native": "^1.0.9",
     "sms-activate": "^1.0.1"
   }

@@ -119,24 +119,7 @@ module.exports = class YahooMail {
                 eFlag = await this.checkValidation()
             }
             if (!eFlag) {
-                const siteDetails = {
-                    sitekey: '6LdWXicTAAAAAKIdor4xQ_gzgD-LgDP3siz7cop6',
-                    pageurl: page.url()
-                }
-
-                const apiKey = '8d1ffc723363da12c6847c2f770bd2bc'
-
-                const requestId = await initiateCaptchaRequest(apiKey);
-
-                const response = await pollForRequestResults(apiKey, requestId);
-                console.log(response)
-                await page.evaluate(`document.querySelectorAll('g-recaptcha').innerHTML="${response}";`);
-
-                page.click('#recaptcha-submit');
-
-                ss++;
-                filename = 'example' + ss + '.png';
-                await page.screenshot({ path: filename });
+                
 
                 async function initiateCaptchaRequest(apiKey) {
                     const formData = {
@@ -151,29 +134,54 @@ module.exports = class YahooMail {
                 }
 
                 async function pollForRequestResults(key, id, retries = 30, interval = 1500, delay = 15000) {
-                    await page.waitFor(delay)
+                    await timeout(delay);
                     ss++;
                     filename = 'example' + ss + '.png';
                     await page.screenshot({ path: filename });
-                    return await poll({
-                        taskFn: await requestCaptchaResults(key, id),
+                    let dataPoll = poll({
+                        taskFn: requestCaptchaResults(key, id),
                         interval,
                         retries
                     });
+                    console.log(dataPoll)
+                    return dataPoll
                 }
 
-                async function requestCaptchaResults(apiKey, requestId) {
+                function requestCaptchaResults(apiKey, requestId) {
                     const url = `http://2captcha.com/res.php?key=${apiKey}&action=get&id=${requestId}&json=1`;
                     return async function () {
                         return new Promise(async function (resolve, reject) {
+                            console.log("Polling response...")
                             const rawResponse = await request.get(url);
                             const resp = JSON.parse(rawResponse);
                             if (resp.status === 0) return reject(resp.request);
+                            console.log("received")
+                            console.log(resp)
                             resolve(resp.request);
                         });
                     }
                 }
+                const timeout = millis => new Promise(resolve => setTimeout(resolve, millis))
+                const siteDetails = {
+                    sitekey: '6LdWXicTAAAAAKIdor4xQ_gzgD-LgDP3siz7cop6',
+                    pageurl: page.url()
+                }
 
+                const apiKey = '3bf8b2b71f3e87f9ab2862df0dfead26'
+
+                const requestId = await initiateCaptchaRequest(apiKey);
+
+                const response = await pollForRequestResults(apiKey, requestId);
+                console.log(response)
+                await page.evaluate((response)=> {
+                    document.getElementById('g-recaptcha-response').innerText=response 
+                },response);
+
+                page.click('#recaptcha-submit');
+
+                ss++;
+                filename = 'example' + ss + '.png';
+                await page.screenshot({ path: filename });
 
             }
             await page.waitFor(await this.stopTime())
@@ -184,7 +192,7 @@ module.exports = class YahooMail {
             const myResponse = await page.waitForResponse(responseURL);
             await browser.waitFor(2000);*/
             //console.log(myResponse)
-            await browser.close();
+            //await browser.close();
         })
 
     }
@@ -242,17 +250,12 @@ module.exports = class YahooMail {
     }
 
     async solveCaptcha() {
-
-
-
-
-
         const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
         puppeteer.use(
             RecaptchaPlugin({
                 provider: {
                     id: '2captcha',
-                    token: '8d1ffc723363da12c6847c2f770bd2bc' // REPLACE THIS WITH YOUR OWN 2CAPTCHA API KEY ⚡
+                    token: '3bf8b2b71f3e87f9ab2862df0dfead26' // REPLACE THIS WITH YOUR OWN 2CAPTCHA API KEY ⚡
                 },
                 visualFeedback: true // colorize reCAPTCHAs (violet = detected, green = solved)
             })

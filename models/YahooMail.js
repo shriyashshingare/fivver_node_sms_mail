@@ -1,7 +1,9 @@
 // const puppeteer = require('puppeteer');
 const { response } = require('express');
 const puppeteer = require('puppeteer-extra')
-const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
+const request = require('request-promise-native');
+const poll = require('promise-poller').default;
+// const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
 var faker = require('faker');
 const SMSActivate = require('sms-activate')
 const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
@@ -11,114 +13,180 @@ var randomUseragent = require('random-useragent');
 module.exports = class YahooMail {
 
     constructor() {
-        this.browser = undefined
-        this.page = undefined
     }
 
     async register() {
-        this.browser = await puppeteer.launch({ headless: true });
-        this.page = await this.browser.newPage();
-        await this.page.setViewport({
-            width: 1080,
-            height: 720,
-            deviceScaleFactor: 1,
-        });
-        let ss = 0;
-        let filename = undefined;
-        let url = "https://login.yahoo.com/account/create";
-        await this.page.goto(url, { waitUntil: 'networkidle2' });
-        const userAgentData = randomUseragent.getRandom((ua) => {
-            return parseFloat(ua.browserVersion) >= 80;
-        })
-        await this.page.setUserAgent(userAgentData);
-        console.log(userAgentData)
+        // browser = await puppeteer.launch({ headless: true });
+        puppeteer.launch({ headless: false }).then(async browser => {
+            const page = await browser.newPage();
+            await page.setViewport({
+                width: 1080,
+                height: 720,
+                deviceScaleFactor: 1,
+            });
+            let ss = 0;
+            let filename = undefined;
+            let url = "https://login.yahoo.com/account/create";
+            await page.goto(url, { waitUntil: 'networkidle2' });
+            // const userAgentData = randomUseragent.getRandom((ua) => {
+            //     return parseFloat(ua.browserVersion) >= 80;
+            // })
+            // await page.setUserAgent(userAgentData);
+            // console.log(userAgentData)
 
-        let phoneData = await this.getNumber();
-        let phoneNumber = undefined;
-        let date = await this.getDate('1-1-1960', '1-1-2000')
-        if (phoneData.balance > 1.5) {
-            phoneNumber = phoneData.number
-        } else {
-            return { "Success": false, "Message": "The balance error", "Payload": [phoneData] }
-        }
-        let userData = {
-            'firstName': faker.name.firstName(),
-            'lastName': faker.name.lastName(),
-            'yid': await this.getMailID(),
-            'password': faker.internet.password(),
-            'shortCountryCode': 'RU',
-            'phone': phoneNumber,
-            'mm': date.getMonth(),
-            'dd': Math.floor(Math.random() * 28) + 1,
-            'yyyy': date.getFullYear(),
-        }
+            let phoneData = await this.getNumber();
+            let phoneNumber = undefined;
+            let date = await this.getDate('1-1-1960', '1-1-2000')
+            if (phoneData.balance > 1.5) {
+                phoneNumber = phoneData.number
+            } else {
+                return { "Success": false, "Message": "The balance error", "Payload": [phoneData] }
+            }
+            let userData = {
+                'firstName': faker.name.firstName(),
+                'lastName': faker.name.lastName(),
+                'yid': await this.getMailID(),
+                'password': faker.internet.password(),
+                'shortCountryCode': 'RU',
+                'phone': phoneNumber,
+                'mm': date.getMonth(),
+                'dd': Math.floor(Math.random() * 28) + 1,
+                'yyyy': date.getFullYear(),
+            }
 
-        console.log(userData)
-        //fill signup form
+            console.log(userData)
+            //fill signup form
 
-        let selectors = [
-            'firstName',
-            'lastName',
-            'yid',
-            'password',
-            'shortCountryCode',
-            'phone',
-            'mm',
-            'dd',
-            'yyyy'
-        ]
+            let selectors = [
+                'firstName',
+                'lastName',
+                'yid',
+                'password',
+                'shortCountryCode',
+                'phone',
+                'mm',
+                'dd',
+                'yyyy'
+            ]
 
-        await this.fillForm(userData, selectors)
-        ss++;
-        filename = 'example' + ss + '.png';
-        await this.page.screenshot({ path: filename });
-        await this.page.click('#reg-submit-button')
-        await this.page.waitFor(4000)
-        ss++;
-        filename = 'example' + ss + '.png';
-        await this.page.screenshot({ path: filename });
+            //await this.fillForm(userData, selectors)
+            for (let i = 0; i < selectors.length; i++) {
+                let myValue = userData[selectors[i]];
+                let inputSelector = "[name='" + selectors[i] + "']";
+                console.log(inputSelector)
 
+                await page.evaluate((myValue, inputSelector) => {
+                    document.querySelector(inputSelector).value = myValue;
+                }, myValue, inputSelector)
 
-
-
-        let eFlag = await this.checkValidation()
-        // for (let i = 0; i < eFlag.length; i++) {
-        //     let selectorVal = selectors;
-        //     let userDataVal = userData;
-        //     if (eFlag[i] == 0) {
-        //         selectorVal.splice(i, 1);
-        //         userDataVal.splice(i, 1);
-        //         i--;
-        //     }
-        // }
-        while (eFlag) {
-            let myValue = await this.getMailID()
-            let myPass = userData.password
-            await this.page.evaluate((myValue, myPass) => {
-                document.querySelector('[name="yid"]').value = myValue;
-                document.querySelector('[name="password"]').value = myPass;
-            }, myValue, myPass)
-
-            await this.page.click('#reg-submit-button')
-            await this.page.waitFor(4000)
+                await page.waitFor(await this.stopTime())
+            }
             ss++;
             filename = 'example' + ss + '.png';
-            await this.page.screenshot({ path: filename });
-            eFlag = await this.checkValidation()
-        }
-        if (!eFlag) {
-            await this.page.waitFor(await this.stopTime())
-            await this.solveCaptcha()
-        }
-        await this.page.waitFor(await this.stopTime())
-        ss++;
-        filename = 'example' + ss + '.png';
-        await this.page.screenshot({ path: filename });
-        /* let responseURL = 'https://login.yahoo.com/account/module/create?validateField=phone'
-        const myResponse = await this.page.waitForResponse(responseURL);
-        await this.browser.waitFor(2000);*/
-        //console.log(myResponse)
-        await this.browser.close();
+            await page.screenshot({ path: filename });
+            await page.click('#reg-submit-button')
+            await page.waitFor(4000)
+            ss++;
+            filename = 'example' + ss + '.png';
+            await page.screenshot({ path: filename });
+
+
+
+
+            let eFlag = await this.checkValidation(page)
+            // for (let i = 0; i < eFlag.length; i++) {
+            //     let selectorVal = selectors;
+            //     let userDataVal = userData;
+            //     if (eFlag[i] == 0) {
+            //         selectorVal.splice(i, 1);
+            //         userDataVal.splice(i, 1);
+            //         i--;
+            //     }
+            // }
+            while (eFlag) {
+                let myValue = await this.getMailID()
+                let myPass = userData.password
+                await page.evaluate((myValue, myPass) => {
+                    document.querySelector('[name="yid"]').value = myValue;
+                    document.querySelector('[name="password"]').value = myPass;
+                }, myValue, myPass)
+
+                await page.click('#reg-submit-button')
+                await page.waitFor(4000)
+                ss++;
+                filename = 'example' + ss + '.png';
+                await page.screenshot({ path: filename });
+                eFlag = await this.checkValidation()
+            }
+            if (!eFlag) {
+                const siteDetails = {
+                    sitekey: '6LdWXicTAAAAAKIdor4xQ_gzgD-LgDP3siz7cop6',
+                    pageurl: page.url()
+                }
+
+                const apiKey = '8d1ffc723363da12c6847c2f770bd2bc'
+
+                const requestId = await initiateCaptchaRequest(apiKey);
+
+                const response = await pollForRequestResults(apiKey, requestId);
+                console.log(response)
+                await page.evaluate(`document.querySelectorAll('g-recaptcha').innerHTML="${response}";`);
+
+                page.click('#recaptcha-submit');
+
+                ss++;
+                filename = 'example' + ss + '.png';
+                await page.screenshot({ path: filename });
+
+                async function initiateCaptchaRequest(apiKey) {
+                    const formData = {
+                        method: 'userrecaptcha',
+                        googlekey: siteDetails.sitekey,
+                        key: apiKey,
+                        pageurl: siteDetails.pageurl,
+                        json: 1
+                    };
+                    const response = await request.post('http://2captcha.com/in.php', { form: formData });
+                    return JSON.parse(response).request;
+                }
+
+                async function pollForRequestResults(key, id, retries = 30, interval = 1500, delay = 15000) {
+                    await page.waitFor(delay)
+                    ss++;
+                    filename = 'example' + ss + '.png';
+                    await page.screenshot({ path: filename });
+                    return await poll({
+                        taskFn: await requestCaptchaResults(key, id),
+                        interval,
+                        retries
+                    });
+                }
+
+                async function requestCaptchaResults(apiKey, requestId) {
+                    const url = `http://2captcha.com/res.php?key=${apiKey}&action=get&id=${requestId}&json=1`;
+                    return async function () {
+                        return new Promise(async function (resolve, reject) {
+                            const rawResponse = await request.get(url);
+                            const resp = JSON.parse(rawResponse);
+                            if (resp.status === 0) return reject(resp.request);
+                            resolve(resp.request);
+                        });
+                    }
+                }
+
+
+            }
+            await page.waitFor(await this.stopTime())
+            ss++;
+            filename = 'example' + ss + '.png';
+            await page.screenshot({ path: filename });
+            /* let responseURL = 'https://login.yahoo.com/account/module/create?validateField=phone'
+            const myResponse = await page.waitForResponse(responseURL);
+            await browser.waitFor(2000);*/
+            //console.log(myResponse)
+            await browser.close();
+        })
+
     }
 
     async stopTime() {
@@ -174,6 +242,12 @@ module.exports = class YahooMail {
     }
 
     async solveCaptcha() {
+
+
+
+
+
+        const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
         puppeteer.use(
             RecaptchaPlugin({
                 provider: {
@@ -183,22 +257,32 @@ module.exports = class YahooMail {
                 visualFeedback: true // colorize reCAPTCHAs (violet = detected, green = solved)
             })
         )
-        
-        console.log(this.page.url());
-        await this.page.solveRecaptchas()
-        setTimeout(()=>{
-        }, 10000)
+
+        // puppeteer usage as normal
+        //puppeteer.launch({ headless: true }).then(async browser => {
+        const page = await browser.newPage()
+        //  await page.goto(page.url();
+        //That's it, a single line of code to solve reCAPTCHAs 🎉
+        //await page.solveRecaptchas()
+        // let { captchas, error } = await page.findRecaptchas()
+        // let { solutions, error } = await page.getRecaptchaSolutions(captchas)
+        // let { solved, error } = await page.enterRecaptchaSolutions(solutions)
+        // for (const frame of page.mainFrame().childFrames()) {
+        //     // Attempt to solve any potential reCAPTCHAs in those frames
+        //     await frame.solveRecaptchas()
+        //   }
         await Promise.all([
-            this.page.waitForNavigation(),
-            this.page.click(`#recaptcha-submit`)
+            page.waitForNavigation(),
+            page.click(`#recaptcha-submit`)
         ])
-        await this.page.screenshot({ path: 'response.png', fullPage: true })
-        //await this.browser.close()
+        await page.screenshot({ path: 'response.png', fullPage: true })
+        page = page;
+        //await browser.close()
         //})
     }
 
     // async checkValidation() {
-    //     return await this.page.evaluate(() => {
+    //     return await page.evaluate(() => {
     //         let checkSelectors = [
     //         'firstName',
     //         'lastName',
@@ -225,8 +309,8 @@ module.exports = class YahooMail {
     //     })
     // }
 
-    async checkValidation() {
-        return await this.page.evaluate(() => {
+    async checkValidation(page) {
+        return await page.evaluate(() => {
             let check = '#reg-error-yid';
             if (document.querySelector(check)) {
                 if (document.querySelector(check).childElementCount > 0) {
@@ -242,17 +326,17 @@ module.exports = class YahooMail {
 
     }
 
-    async fillForm(userData, selectors) {
-        for (let i = 0; i < selectors.length; i++) {
-            let myValue = userData[selectors[i]];
-            let inputSelector = "[name='" + selectors[i] + "']";
-            console.log(inputSelector)
+    // async fillForm(userData, selectors) {
+    //     for (let i = 0; i < selectors.length; i++) {
+    //         let myValue = userData[selectors[i]];
+    //         let inputSelector = "[name='" + selectors[i] + "']";
+    //         console.log(inputSelector)
 
-            await this.page.evaluate((myValue, inputSelector) => {
-                document.querySelector(inputSelector).value = myValue;
-            }, myValue, inputSelector)
+    //         await page.evaluate((myValue, inputSelector) => {
+    //             document.querySelector(inputSelector).value = myValue;
+    //         }, myValue, inputSelector)
 
-            await this.page.waitFor(await this.stopTime())
-        }
-    }
+    //         await page.waitFor(await this.stopTime())
+    //     }
+    // }
 }

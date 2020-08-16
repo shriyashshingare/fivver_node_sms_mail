@@ -40,7 +40,7 @@ sms.getBalance().then(async (balance) => {
 
 
 //smsTesting();
-//mydata();
+mydata();
 
 // await sms.setStatus(id, 1)
 
@@ -76,10 +76,13 @@ async function solveCaptcha() {
 
         await Promise.all([
             page.waitForNavigation(),
-            page.click(`#recaptcha-demo-submit`)
+            page.click(`#recaptcha-submit`)
         ])
         await page.screenshot({ path: 'response.png', fullPage: true })
         //await browser.close()
     })
 }
-solveCaptcha();
+//solveCaptcha();
+
+
+

@@ -26,10 +26,12 @@
     "mailparser": "^2.8.1",
     "mysql": "github:mysqljs/mysql",
     "nodemailer": "^6.4.11",
+    "promise-poller": "^1.9.1",
     "puppeteer": "^5.2.1",
     "puppeteer-extra": "^3.1.13",
     "puppeteer-extra-plugin-recaptcha": "^3.1.15",
     "random-useragent": "^0.4.0",
+    "request-promise-native": "^1.0.9",
     "sms-activate": "^1.0.1"
   }
 }

@@ -16,8 +16,20 @@ module.exports.sendMail = async function (req, res) {
 module.exports.receiveMail = async function (req, res) {
     try {
         if(1) {
-            var response = await new Mail().receiveMail();
-            res.send(response)
+            //get username & password from database from here
+            //& send using this array like this
+            users = [
+                ['email','password'],
+                ['email','password'],
+                ['email','password'],
+                ['email','password'],
+            ]
+          
+            users.map(async (udata)=> {
+                var inbox = await new mailjs().receiveMail('Bulk Mail',udata[0],udata[1]);
+                var spam = await new mailjs().receiveMail('INBOX',udata[0],udata[1]);
+                res.send([inbox, spam])
+            })
         }else {
             res.send({ "Success": true, "Error": error, "Payload": [] })
         }

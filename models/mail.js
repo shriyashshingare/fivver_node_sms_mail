@@ -10,25 +10,31 @@ class Mail {
     constructor() { 
     }
 
-     async receiveMail(){
+     async receiveMail(whichBox, u, p){
         try {
             var mailReceivedList = [];
             var imap = new Imap({
-                user: 'shriyashshingare@yahoo.com',
-                password: 'ricbssvuwttkubxt',
+                user: u,
+                password: p,
                 host: 'imap.mail.yahoo.com',
                 port: 993,
                 tls: true
             });
 
             function openInbox(cb) {
-                imap.openBox('INBOX', true, cb);
+                imap.openBox(whichBox, true, cb);
             }
 
-            imap.once('ready', function () {    
+            imap.once('ready', function () {
+                /*
+                imap.getBoxes( (e, data) => {
+                    console.log(data)
+                    mailReceivedList = data;
+                })*/
+                
                 openInbox(function (err, box) {
                     if (err) throw err;
-                    imap.search([['SINCE', 'June 15, 2018']], function (err, results) {
+                    imap.search([['All']], function (err, results) {
                         if (err) throw err;
                         var f = imap.fetch(results, { bodies: '' });
                         f.on('message', function (msg, seqno) {
@@ -49,7 +55,6 @@ class Mail {
                                 //console.log(prefix + 'Attributes: % s', inspect(attrs, false, 8));
                             });
                             msg.once('end', function () {
-                                console.log(mailReceivedList);
                                 //console.log(prefix + 'Finished');
                             });
                         });
@@ -71,7 +76,9 @@ class Mail {
             });
             return new Promise((resolve,reject) => {
                 imap.connect();
+                
                 imap.once('end', async function () {
+                    
                     resolve(mailReceivedList)
                     console.log('Connection ended');
                     return mailReceivedList;

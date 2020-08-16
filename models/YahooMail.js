@@ -15,7 +15,7 @@ module.exports = class YahooMail {
     constructor() {
     }
 
-    async register() {
+    async createMailAccount() {
         // browser = await puppeteer.launch({ headless: true });
         puppeteer.launch({ headless: false }).then(async browser => {
             const page = await browser.newPage();
@@ -284,34 +284,6 @@ module.exports = class YahooMail {
         //})
     }
 
-    // async checkValidation() {
-    //     return await page.evaluate(() => {
-    //         let checkSelectors = [
-    //         'firstName',
-    //         'lastName',
-    //         'yid',
-    //         'password',
-    //         'shortCountryCode',
-    //         'phone',
-    //         'mm',
-    //         'dd',
-    //         'yyyy'
-    //         ]
-    //         var formCheck = []
-    //         for(let i=0;i<checkSelectors.length;i++)
-    //         {
-    //             let check = '#reg-error-'+checkSelectors[i];
-    //             if (document.querySelector(check)) {
-    //                 if (document.querySelector(check).childElementCount > 0) {
-    //                     formCheck.push(1);
-    //                 } else {
-    //                     formCheck.push(0);                    }
-    //             } else {
-    //                 formCheck.push(1);                }
-    //         }
-    //     })
-    // }
-
     async checkValidation(page) {
         return await page.evaluate(() => {
             let check = '#reg-error-yid';
@@ -328,18 +300,4 @@ module.exports = class YahooMail {
         })
 
     }
-
-    // async fillForm(userData, selectors) {
-    //     for (let i = 0; i < selectors.length; i++) {
-    //         let myValue = userData[selectors[i]];
-    //         let inputSelector = "[name='" + selectors[i] + "']";
-    //         console.log(inputSelector)
-
-    //         await page.evaluate((myValue, inputSelector) => {
-    //             document.querySelector(inputSelector).value = myValue;
-    //         }, myValue, inputSelector)
-
-    //         await page.waitFor(await this.stopTime())
-    //     }
-    // }
 }

@@ -1,5 +1,7 @@
 const YahooMail = require("../models/YahooMail");
 const puppeteer = require('puppeteer-extra')
+const YahooMail = require('./models/YahooMail')
+const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
 
 module.exports.createmailaccount = async function (req, res) {
     try {

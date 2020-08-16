@@ -1,14 +1,23 @@
-//const mailjs = require('./models/mail');
+const mailjs = require('./models/mail');
 const YahooMail = require('./models/YahooMail')
 const puppeteer = require('puppeteer-extra')
 const SMSActivate = require('sms-activate')
 const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
-/*
-async function mydata() {
-    var mail = await new mailjs().receiveMail();
-    console.log(mail)  ;
+
+async function mydata2() {
+
+    users = [
+      ['shriyashshingare@yahoo.com',''],
+    ]
+
+    users.map(async (udata)=> {
+      var inbox = await new mailjs().receiveMail('Bulk Mail',udata[0],udata[1]);
+      var spam = await new mailjs().receiveMail('INBOX',udata[0],udata[1]);
+      console.log(inbox);
+      console.log(spam)
+    })
 }
-*/
+
 async function mydata() {
   var yahooMail = await new YahooMail();
   yahooMail.register();
@@ -40,7 +49,7 @@ sms.getBalance().then(async (balance) => {
 
 
 //smsTesting();
-mydata();
+mydata2();
 
 // await sms.setStatus(id, 1)
 

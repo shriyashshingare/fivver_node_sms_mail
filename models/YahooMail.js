@@ -21,12 +21,11 @@ module.exports = class YahooMail {
             deviceScaleFactor: 1,
         });
         await page.goto(url, { waitUntil: 'networkidle2' });
-
-        var userAgent = await randomUseragent.getRandom()
-        console.log(userAgent, 'rua')
-        await page.setUserAgent(userAgent)
-        console.log(await browser.userAgent());
-
+        const userAgentData = randomUseragent.getRandom((ua)=> {
+            return parseFloat(ua.browserVersion) >= 80;
+        })
+        await page.setUserAgent(userAgentData);
+        console.log(userAgentData)
         let phoneData = await this.getNumber();
         let phoneNumber = undefined;
         let date = await this.getDate('1-1-1960', '1-1-2000')
@@ -43,7 +42,7 @@ module.exports = class YahooMail {
             'shortCountryCode':'RU',
             'phone': phoneNumber,
             'mm': date.getMonth(),
-            'dd': date.getDate(),
+            'dd': Math.floor(Math.random() * 28) + 1,
             'yyyy': date.getFullYear(),
         }
 
@@ -98,9 +97,10 @@ module.exports = class YahooMail {
         eFlag = await checkRightMail()
         while (eFlag) {
             let myValue = await this.getMailID()
-            await page.evaluate((myValue) => {
+            let myPass = userData.password
+            await page.evaluate((myValue, myPass) => {
                 document.querySelector('[name="yid"]').value = myValue;
-            }, myValue)
+            }, myValue, myPass)
 
             await page.click('#reg-submit-button')
             await page.waitFor(4000)
@@ -122,9 +122,10 @@ module.exports = class YahooMail {
     }
 
     async getMailID() {
-        let emailID = faker.internet.email()
+        let emailID = faker.name.firstName() + faker.internet.email()
         var remove_after = emailID.indexOf('@');
         emailID = emailID.substring(0, remove_after);
+        emailID.trim()
         return emailID
     }
 

@@ -17,7 +17,13 @@ module.exports = class YahooMail {
 
     async createMailAccount() {
         // browser = await puppeteer.launch({ headless: true });
-        puppeteer.launch({ headless: false }).then(async browser => {
+        puppeteer.launch({ 
+            ignoreDefaultArgs: true,
+            headless: false,
+            executablePath: '/usr/bin/google-chrome',
+            args: [
+            ],
+        }).then(async browser => {
             const page = await browser.newPage();
             await page.setViewport({
                 width: 1080,
@@ -49,7 +55,7 @@ module.exports = class YahooMail {
                 'password': faker.internet.password(),
                 'shortCountryCode': 'RU',
                 'phone': phoneNumber,
-                'mm': date.getMonth(),
+                'mm': Math.floor(Math.random() * 11) + 1,
                 'dd': Math.floor(Math.random() * 28) + 1,
                 'yyyy': date.getFullYear(),
             }
@@ -169,18 +175,40 @@ module.exports = class YahooMail {
 
                 const apiKey = '3bf8b2b71f3e87f9ab2862df0dfead26'
 
-                const requestId = await initiateCaptchaRequest(apiKey);
+                //const requestId = await initiateCaptchaRequest(apiKey);
 
-                const response = await pollForRequestResults(apiKey, requestId);
-                console.log(response)
+                // const response = await pollForRequestResults(apiKey, requestId);
+                // console.log(response)
+                // await page.evaluate((response)=> {
+                //     document.getElementById('g-recaptcha-response').innerText=response 
+                // },response);
+
+                // page.click('#recaptcha-submit');
+
+                // let pageCookies = await page.cookies()
+                // for(let i=0; i<pageCookies.length;i++) {
+                //     if(pageCookies[i]['name'] === 'AS') {
+                //         pageCookies[i]['SameSite'] = 'None';
+                //         page.setCookie(pageCookies[i]);
+                //         console.log('twerkabay')
+                //     }
+                // }
+                page.waitFor(2000)
+                
+                let frameSelector = await page.$('#recaptcha-iframe')
+                let myHTML = await frameSelector.contentFrame()
+                let frameinTwo = await page.$('#recaptcha-iframe')
+                let myHTML2 = await frameinTwo.contentFrame()
+                //#recaptcha-script
                 await page.evaluate((response)=> {
-                    document.getElementById('g-recaptcha-response').innerText=response 
-                },response);
-
-                page.click('#recaptcha-submit');
+                //     document.getElementById('g-recaptcha-response').innerText=response 
+                // },response);
+                
+                
+                //await page.reload({ waitUntil: 'networkidle2' })
 
                 ss++;
-                filename = 'example' + ss + '.png';
+                filename = 'final' + ss + '.png';
                 await page.screenshot({ path: filename });
 
             }
@@ -197,8 +225,16 @@ module.exports = class YahooMail {
 
     }
 
+    async setYahooCookies(oneCookie) {
+
+        for(let i=0; i<oneCookie.length; i++) {
+            oneCookie[i]['sameSite'] = 'None'
+        }
+        return oneCookie;
+    }
+
     async stopTime() {
-        return Math.floor(Math.random() * Math.floor(5000));
+        return Math.floor(Math.random() * Math.floor(1000));
     }
 
     async getMailID() {
@@ -255,7 +291,7 @@ module.exports = class YahooMail {
             RecaptchaPlugin({
                 provider: {
                     id: '2captcha',
-                    token: '3bf8b2b71f3e87f9ab2862df0dfead26' // REPLACE THIS WITH YOUR OWN 2CAPTCHA API KEY ⚡
+                    token: '8d1ffc723363da12c6847c2f770bd2bc' // REPLACE THIS WITH YOUR OWN 2CAPTCHA API KEY ⚡
                 },
                 visualFeedback: true // colorize reCAPTCHAs (violet = detected, green = solved)
             })

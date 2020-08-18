@@ -2,7 +2,7 @@ const mailjs = require('./models/mail');
 const YahooMail = require('./models/YahooMail')
 const puppeteer = require('puppeteer-extra')
 const SMSActivate = require('sms-activate')
-const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
+//const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
 
 async function mydata2() {
 

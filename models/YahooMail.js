@@ -6,7 +6,7 @@ const poll = require('promise-poller').default;
 // const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
 var faker = require('faker');
 const SMSActivate = require('sms-activate')
-const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
+//const sms = new SMSActivate('940054f3775c2e49f71fd64c4c3ef116')
 var randomUseragent = require('random-useragent');
 
 
@@ -40,7 +40,7 @@ module.exports = class YahooMail {
             // await page.setUserAgent(userAgentData);
             // console.log(userAgentData)
 
-            let phoneData = await this.getNumber();
+            let phoneData = '9178307920';
             let phoneNumber = undefined;
             let date = await this.getDate('1-1-1960', '1-1-2000')
             if (phoneData.balance > 1.5) {
@@ -193,23 +193,24 @@ module.exports = class YahooMail {
                 //         console.log('twerkabay')
                 //     }
                 // }
-                page.waitFor(2000)
+                await page.waitFor(2000)
                 
-                let frameSelector = await page.$('#recaptcha-iframe')
-                let myHTML = await frameSelector.contentFrame()
-                let frameinTwo = await page.$('#recaptcha-iframe')
-                let myHTML2 = await frameinTwo.contentFrame()
+                await page.waitFor('iframe')
+                let frameEvent = await page.$('#recaptcha-iframe')
+                let newData = await frameEvent.contentFrame();
+                //let frama = frameEvent.$('#')
+                //frameEvent
+                let frameEvent2 = await
+                console.log('myFrame')
                 //#recaptcha-script
-                await page.evaluate((response)=> {
-                //     document.getElementById('g-recaptcha-response').innerText=response 
-                // },response);
+                
                 
                 
                 //await page.reload({ waitUntil: 'networkidle2' })
 
                 ss++;
                 filename = 'final' + ss + '.png';
-                await page.screenshot({ path: filename });
+                //await page.screenshot({ path: filename });
 
             }
             await page.waitFor(await this.stopTime())
@@ -261,29 +262,29 @@ module.exports = class YahooMail {
         }
     }
 
-    async getNumber() {
-        let balance = await sms.getBalance()
+    // async getNumber() {
+    //     let balance = await sms.getBalance()
 
-        //sms.getBalance().then(async (balance) => { //https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getBalance
-        if (balance > 0) {
-            var { id, number } = await sms.getNumber('mb', 0) // yandex https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getNumber&service=$service&forward=$forward&operator=$operator&ref=$ref&country=$country
-            number = number.toString()
-            number = number.slice(1)
-            var data = { balance: balance, number: number, orderId: id }
-            console.log(data)
-            return new Promise((resolve, reject) => {
-                resolve(data)
-                return data;
-            })
+    //     //sms.getBalance().then(async (balance) => { //https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getBalance
+    //     if (balance > 0) {
+    //         var { id, number } = await sms.getNumber('mb', 0) // yandex https://sms-activate.ru/stubs/handler_api.php?api_key=$api_key&action=getNumber&service=$service&forward=$forward&operator=$operator&ref=$ref&country=$country
+    //         number = number.toString()
+    //         number = number.slice(1)
+    //         var data = { balance: balance, number: number, orderId: id }
+    //         console.log(data)
+    //         return new Promise((resolve, reject) => {
+    //             resolve(data)
+    //             return data;
+    //         })
 
-        } else {
-            return new Promise((resolve, reject) => {
-                resolve(balance)
-                return { balance: balance };
-            })
-        }
-        //   }).catch(console.error)
-    }
+    //     } else {
+    //         return new Promise((resolve, reject) => {
+    //             resolve(balance)
+    //             return { balance: balance };
+    //         })
+    //     }
+    //     //   }).catch(console.error)
+    // }
 
     async solveCaptcha() {
         const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha')
